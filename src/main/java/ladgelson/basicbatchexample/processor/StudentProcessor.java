@@ -11,8 +11,8 @@ public class StudentProcessor implements ItemProcessor<Student, Student> {
     @Override
     public Student process(Student student) throws Exception {
         logger.info("Processing...");
-        final String firstName = student.getFirstName().toUpperCase();
-        final String lastName = student.getLastName().toUpperCase();
+        final String firstName = student.getFirstname().toUpperCase();
+        final String lastName = student.getLastname().toUpperCase();
         return new Student(student.getId(), firstName, lastName, student.getEmail());
     }
 }

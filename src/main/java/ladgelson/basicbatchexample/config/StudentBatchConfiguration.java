@@ -10,6 +10,8 @@ import org.springframework.batch.core.configuration.annotation.EnableBatchProces
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
+import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
+import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.FlatFileItemWriter;
 import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
@@ -22,6 +24,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
 
+import javax.sql.DataSource;
+
 @Configuration
 @EnableBatchProcessing
 public class StudentBatchConfiguration {
@@ -31,6 +35,8 @@ public class StudentBatchConfiguration {
     private StepBuilderFactory stepBuilderFactory;
     @Autowired
     private JobBuilderFactory jobBuilderFactory;
+    @Autowired
+    private DataSource dataSource;
 
     @Bean
     public FlatFileItemReader<Student> readDataFromCsv() {
@@ -60,7 +66,6 @@ public class StudentBatchConfiguration {
                 });
             }
         });
-        logger.info("Reader...");
         return reader;
     }
 
@@ -72,53 +77,35 @@ public class StudentBatchConfiguration {
     }
 
     @Bean
-    // Each step will have a writer, and our writer is a Class where we will write our output data
-    // inside another file, after the transformation
-    public FlatFileItemWriter<Student> writeDataOnCsv() {
-        // Create writer instance
-        FlatFileItemWriter<Student> writer = new FlatFileItemWriter<>();
-
-        // Set output file location
-        writer.setResource(new FileSystemResource("C:\\Users\\Colaborador - Datum\\Desktop\\STUDY\\basic-batch-example\\src\\main\\resources\\csv\\output.csv"));
-
-        // All job repetitions should "append" to same output file
-        // writer.setAppendAllowed(true);
-
-        // Name field values sequence based on object properties
-
-        // This is a field extractor for a java bean. Given an array of property names,
-        // it will reflectively call getters on the item and return an array of all the values.
-        BeanWrapperFieldExtractor<Student> fieldExtractor = new BeanWrapperFieldExtractor<>();
-        fieldExtractor.setNames(Student.fields());
-
-        // A LineAggregator implementation that converts an object into a delimited list of strings.
-        // The default delimiter is a comma.
-        DelimitedLineAggregator<Student> aggregator = new DelimitedLineAggregator<>();
-        aggregator.setFieldExtractor(fieldExtractor);
-        writer.setLineAggregator(aggregator);
-        logger.info("Writer...");
+    public JdbcBatchItemWriter<Student> writeDataOnDatabase() {
+        String insert = "insert into csvtodbdata (id, firstname, lastname, email) " +
+                "values (:id, :firstname, :lastname, :email)";
+        JdbcBatchItemWriter<Student> writer = new JdbcBatchItemWriter<>();
+        writer.setDataSource(dataSource);
+        writer.setSql(insert);
+        writer.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>());
         return writer;
     }
 
     @Bean
     // Defines an step of my csv to csv job
-    public Step csvToCsvStep() {
+    public Step csvToDatabaseStep() {
         // It works as ranges to be executed, so, if the chunk size is 2,
         // It will read, process and write 2 by 2.
-        return stepBuilderFactory.get("csvToCsvStep")
+        return stepBuilderFactory.get("csvToDatabaseStep")
                 .<Student, Student>chunk(2)
                 .reader(readDataFromCsv())
                 .processor(processor())
-                .writer(writeDataOnCsv())
+                .writer(writeDataOnDatabase())
                 .build();
     }
 
     @Bean
     // Defines an Job to be executed, very simple, just setting our chunk step and build
     public Job processStudentJob() {
-        return jobBuilderFactory.get("processStudentJob")
+        return jobBuilderFactory.get("csv-to-database-job")
                 .incrementer(new RunIdIncrementer())
-                .flow(csvToCsvStep())
+                .flow(csvToDatabaseStep())
                 .end().build();
     }
 

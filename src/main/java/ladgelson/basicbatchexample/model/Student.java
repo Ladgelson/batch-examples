@@ -2,21 +2,21 @@ package ladgelson.basicbatchexample.model;
 
 public class Student {
     private int id;
-    private String firstName;
-    private String lastName;
+    private String firstname;
+    private String lastname;
     private String email;
 
     public static String[] fields() {
-        return new String[] {"id", "firstName", "lastName", "email"};
+        return new String[] {"id", "firstname", "lastname", "email"};
     }
 
     public Student() {
     }
 
-    public Student(int id, String firstName, String lastName, String email) {
+    public Student(int id, String firstname, String lastname, String email) {
         this.id = id;
-        this.firstName = firstName;
-        this.lastName = lastName;
+        this.firstname = firstname;
+        this.lastname = lastname;
         this.email = email;
     }
 
@@ -29,21 +29,21 @@ public class Student {
         return this;
     }
 
-    public String getFirstName() {
-        return firstName;
+    public String getFirstname() {
+        return firstname;
     }
 
-    public Student setFirstName(String firstName) {
-        this.firstName = firstName;
+    public Student setFirstname(String firstname) {
+        this.firstname = firstname;
         return this;
     }
 
-    public String getLastName() {
-        return lastName;
+    public String getLastname() {
+        return lastname;
     }
 
-    public Student setLastName(String lastName) {
-        this.lastName = lastName;
+    public Student setLastname(String lastname) {
+        this.lastname = lastname;
         return this;
     }
 
